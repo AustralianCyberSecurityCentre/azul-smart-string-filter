@@ -1,0 +1,1 @@
+{'fit_prior': True, 'alpha': 10.0}

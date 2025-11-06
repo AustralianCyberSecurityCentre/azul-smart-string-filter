@@ -1,0 +1,3 @@
+exclude azul_smart_string_filter/good*.txt
+exclude azul_smart_string_filter/bad*.txt
+prune models

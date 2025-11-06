@@ -1,0 +1,1 @@
+{'LR__C': 0.001, 'LR__class_weight': None, 'LR__fit_intercept': True, 'LR__max_iter': 1000, 'LR__multi_class': 'auto', 'LR__penalty': 'l2', 'LR__solver': 'liblinear', 'LR__tol': 0.0001}

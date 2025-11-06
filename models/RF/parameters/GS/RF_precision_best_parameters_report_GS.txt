@@ -1,0 +1,1 @@
+{'RF__bootstrap': False, 'RF__max_depth': None, 'RF__max_features': 'sqrt', 'RF__max_leaf_nodes': None, 'RF__min_samples_leaf': 1, 'RF__min_samples_split': 10, 'RF__n_estimators': 200}
