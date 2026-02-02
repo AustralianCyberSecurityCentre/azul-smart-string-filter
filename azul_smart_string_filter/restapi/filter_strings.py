@@ -74,7 +74,7 @@ async def submit_unfiltered_strings(
         strings_to_be_filtered = [obj.string for obj in strings]
         predictions = gsf.find_legible_strings(strings_to_be_filtered)
 
-        for string, is_good in zip(strings, predictions):
+        for string, is_good in zip(strings, predictions, strict=False):
             if is_good:
                 filtered_strings.append(string)
         return filtered_strings
