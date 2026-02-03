@@ -87,7 +87,7 @@ def is_supported_file_format(file_format, file_format_enum):
 
 def main():
     """Start server."""
-    uvicorn.run(app, host="0.0.0.0", port=8851, log_level="info")  # nosec B104
+    uvicorn.run(app, host="0.0.0.0", port=8851, log_level="info")  # noqa S104
 
 
 if __name__ == "__main__":
