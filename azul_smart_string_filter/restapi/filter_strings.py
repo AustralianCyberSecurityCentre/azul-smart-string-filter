@@ -74,7 +74,7 @@ async def submit_unfiltered_strings(
         strings_to_be_filtered = [obj.string for obj in strings]
         predictions = gsf.find_legible_strings(strings_to_be_filtered)
 
-        for string, is_good in zip(strings, predictions):
+        for string, is_good in zip(strings, predictions, strict=False):
             if is_good:
                 filtered_strings.append(string)
         return filtered_strings
@@ -87,7 +87,7 @@ def is_supported_file_format(file_format, file_format_enum):
 
 def main():
     """Start server."""
-    uvicorn.run(app, host="0.0.0.0", port=8851, log_level="info")  # nosec B104
+    uvicorn.run(app, host="0.0.0.0", port=8851, log_level="info")  # noqa S104
 
 
 if __name__ == "__main__":

@@ -1,9 +1,0 @@
-onnx
-onnxruntime
-scikit-learn
-skl2onnx
-azul_bedrock
-starlette_exporter
-uvicorn
-fastapi
-uvicorn[standard]>=0.13.3

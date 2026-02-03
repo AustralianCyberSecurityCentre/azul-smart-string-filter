@@ -10,7 +10,7 @@ pip install azul-smart-string-filter
 
 ## Usage
 
-A default entrypoint has been defined in `setup.py`, which will run `main()` in `azul_smart_string_filter/train/main.py`  
+A default entrypoint has been defined in `pyproject.toml`, which will run `main()` in `azul_smart_string_filter/train/main.py`  
 There are two functions that can be called: train and tune.
 Example: `azul-smart-string-filter trainmodel RF f1 RS`, `azul-smart-string-filter tune RF f1 RS`
 The above example uses the parameters model = RF = RandomForest, score=f1, Search type = RS  
