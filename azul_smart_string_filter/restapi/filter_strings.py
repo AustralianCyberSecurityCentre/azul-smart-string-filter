@@ -1,6 +1,6 @@
 """Rest api for string filter."""
 
-from contextlib import asynccontextmanager
+import asyncio
 from enum import Enum
 
 import uvicorn
@@ -33,13 +33,13 @@ class SearchResult(BaseModel):
 
 
 gsf = None
+model_loading_task = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Load model into memory on pod startup."""
+async def load_model_async():
+    """Load the model in the background after the server starts."""
     global gsf
-    print("Starting SmartStringFilter model load...")
+    print("Background model load started...")
     try:
         gsf = SmartStringFilter()
         print("SmartStringFilter model loaded successfully")
@@ -48,11 +48,16 @@ async def lifespan(app: FastAPI):
         import traceback
 
         traceback.print_exc()
-        raise  # re‑raise so Kubernetes sees the failure
-    yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
+
+
+@app.on_event("startup")
+async def schedule_model_load():
+    """Schedule the model to load AFTER the server starts."""
+    global model_loading_task
+    model_loading_task = asyncio.create_task(load_model_async())
 
 
 app.add_middleware(
@@ -62,7 +67,6 @@ app.add_middleware(
     group_paths=True,
 )
 
-# metrics is only available at the root path (not api_prefix) - for prometheus
 app.add_route("/metrics", handle_metrics)
 
 
@@ -80,16 +84,14 @@ def read_root():
 async def submit_unfiltered_strings(
     request: Request,
     resp: Response,
-    # filetype strings were extracted from.
     file_format: str = Query(...),
-    # strings to be filtered.
     strings: list[SearchResult] = Body(...),
 ) -> list[SearchResult]:
-    """Endpoint that handles the POST request.
+    """Filter strings using the model."""
+    # Ensure model is ready
+    if gsf is None:
+        return {"error": "Model is still loading. Try again shortly."}
 
-    It expects a file_format along with a list of strings for json body.
-    It returns a list of FilteredStrings.
-    """
     if is_supported_file_format(file_format, FileTypes.windows):
         filtered_strings = []
         strings_to_be_filtered = [obj.string for obj in strings]
