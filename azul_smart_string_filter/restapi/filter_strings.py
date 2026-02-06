@@ -37,10 +37,18 @@ gsf = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load AI model into memory."""
+    """Load model into memory on pod startup."""
     global gsf
-    # Load model once at startup
-    gsf = SmartStringFilter()
+    print("Starting SmartStringFilter model load...")
+    try:
+        gsf = SmartStringFilter()
+        print("SmartStringFilter model loaded successfully")
+    except Exception as e:
+        print("SmartStringFilter failed to load:", e)
+        import traceback
+
+        traceback.print_exc()
+        raise  # re‑raise so Kubernetes sees the failure
     yield
 
 
