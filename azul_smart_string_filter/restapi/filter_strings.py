@@ -1,6 +1,5 @@
 """Rest api for string filter."""
 
-import asyncio
 from enum import Enum
 
 import uvicorn
@@ -32,33 +31,7 @@ class SearchResult(BaseModel):
     offset: int
 
 
-gsf = None
-model_loading_task = None
-
-
-async def load_model_async():
-    """Load the model in the background after the server starts."""
-    global gsf
-    print("Background model load started...")
-    try:
-        gsf = SmartStringFilter()
-        print("SmartStringFilter model loaded successfully")
-    except Exception as e:
-        print("SmartStringFilter failed to load:", e)
-        import traceback
-
-        traceback.print_exc()
-
-
 app = FastAPI()
-
-
-@app.on_event("startup")
-async def schedule_model_load():
-    """Schedule the model to load AFTER the server starts."""
-    global model_loading_task
-    model_loading_task = asyncio.create_task(load_model_async())
-
 
 app.add_middleware(
     PrometheusMiddleware,
@@ -67,6 +40,7 @@ app.add_middleware(
     group_paths=True,
 )
 
+# metrics is only available at the root path (not api_prefix) - for prometheus
 app.add_route("/metrics", handle_metrics)
 
 
@@ -74,6 +48,10 @@ app.add_route("/metrics", handle_metrics)
 def read_root():
     """Allow user to see server is running."""
     return "OK"
+
+
+# store model on pod startup
+gsf = SmartStringFilter()
 
 
 @app.post(
@@ -84,14 +62,16 @@ def read_root():
 async def submit_unfiltered_strings(
     request: Request,
     resp: Response,
+    # filetype strings were extracted from.
     file_format: str = Query(...),
+    # strings to be filtered.
     strings: list[SearchResult] = Body(...),
 ) -> list[SearchResult]:
-    """Filter strings using the model."""
-    # Ensure model is ready
-    if gsf is None:
-        return {"error": "Model is still loading. Try again shortly."}
+    """Endpoint that handles the POST request.
 
+    It expects a file_format along with a list of strings for json body.
+    It returns a list of FilteredStrings.
+    """
     if is_supported_file_format(file_format, FileTypes.windows):
         filtered_strings = []
         strings_to_be_filtered = [obj.string for obj in strings]
