@@ -1,5 +1,6 @@
 """Rest api for string filter."""
 
+from contextlib import asynccontextmanager
 from enum import Enum
 
 import uvicorn
@@ -31,7 +32,20 @@ class SearchResult(BaseModel):
     offset: int
 
 
-app = FastAPI()
+gsf = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Load AI model into memory."""
+    global gsf
+    # Load model once at startup
+    gsf = SmartStringFilter()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
 
 app.add_middleware(
     PrometheusMiddleware,
@@ -48,10 +62,6 @@ app.add_route("/metrics", handle_metrics)
 def read_root():
     """Allow user to see server is running."""
     return "OK"
-
-
-# store model on pod startup
-gsf = SmartStringFilter()
 
 
 @app.post(
