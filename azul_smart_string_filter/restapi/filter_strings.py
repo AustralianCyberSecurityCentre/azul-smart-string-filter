@@ -50,6 +50,10 @@ def read_root():
     return "OK"
 
 
+# store model on pod startup
+gsf = SmartStringFilter()
+
+
 @app.post(
     "/v0/strings",
     response_model=list[SearchResult],
@@ -69,7 +73,6 @@ async def submit_unfiltered_strings(
     It returns a list of FilteredStrings.
     """
     if is_supported_file_format(file_format, FileTypes.windows):
-        gsf = SmartStringFilter()
         filtered_strings = []
         strings_to_be_filtered = [obj.string for obj in strings]
         predictions = gsf.find_legible_strings(strings_to_be_filtered)

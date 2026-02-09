@@ -83,4 +83,4 @@ RUN touch /tmp/testingpassed
 FROM base AS release
 # copy from `tester` stage to ensure testing is not skipped due to build optimisations.
 COPY --from=tester /tmp/testingpassed /tmp/
-ENTRYPOINT ["azul-smart-string-filter"]
+ENTRYPOINT ["azul-smart-string-filter-server"]

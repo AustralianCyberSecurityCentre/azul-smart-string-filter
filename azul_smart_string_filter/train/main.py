@@ -126,8 +126,15 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
         ),
         "NB": (
             {
-                "alpha": [0.1, 1.0, 10.0],  # Specify the alpha parameter for MultinomialNB.
-                "fit_prior": [True, False],  # Specify the fit_prior parameter for MultinomialNB.
+                "alpha": [
+                    0.1,
+                    1.0,
+                    10.0,
+                ],  # Specify the alpha parameter for MultinomialNB.
+                "fit_prior": [
+                    True,
+                    False,
+                ],  # Specify the fit_prior parameter for MultinomialNB.
             },
             MultinomialNB(),
         ),
@@ -135,12 +142,26 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
             {
                 "max_iter": [1000, 5000],  # Increase the number of iterations.
                 "penalty": ["l1", "l2"],  # Regularization type: L1 or L2.
-                "C": [0.001, 0.01, 0.1, 1, 10, 100],  # Inverse of regularization strength.
-                "solver": ["liblinear", "saga"],  # Algorithm to use in the optimization problem.
+                "C": [
+                    0.001,
+                    0.01,
+                    0.1,
+                    1,
+                    10,
+                    100,
+                ],  # Inverse of regularization strength.
+                "solver": [
+                    "liblinear",
+                    "saga",
+                ],  # Algorithm to use in the optimization problem.
                 "tol": [1e-4, 1e-3, 1e-2],  # Tolerance for stopping criteria.
                 "fit_intercept": [True, False],  # Whether to add a bias term.
                 "class_weight": [None, "balanced"],  # Balances class weights.
-                "multi_class": ["auto", "ovr", "multinomial"],  # Multi-class handling strategy.
+                "multi_class": [
+                    "auto",
+                    "ovr",
+                    "multinomial",
+                ],  # Multi-class handling strategy.
             },
             LogisticRegression(),
         ),
@@ -151,7 +172,11 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
                 "algorithm": ["auto", "ball_tree", "kd_tree", "brute"],
                 "p": [1, 2],  # 1 for Manhattan distance, 2 for Euclidean distance.
                 "leaf_size": [20, 30, 40],  # Leaf size passed to BallTree or KDTree.
-                "metric": ["minkowski", "chebyshev", "mahalanobis"],  # Distance metric to use.
+                "metric": [
+                    "minkowski",
+                    "chebyshev",
+                    "mahalanobis",
+                ],  # Distance metric to use.
                 "n_jobs": [-1],  # Use all available CPUs.
             },
             KNeighborsClassifier(),
@@ -160,9 +185,20 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
             {
                 "n_estimators": [100, 200, 300],  # Number of trees in the forest.
                 "max_depth": [None, 10, 20],  # Maximum depth of the tree.
-                "min_samples_split": [2, 5, 10],  # Minimum number of samples required to split an internal node.
-                "min_samples_leaf": [1, 2, 4],  # Minimum number of samples required to be at a leaf node.
-                "bootstrap": [True, False],  # Whether bootstrap samples are used when building trees.
+                "min_samples_split": [
+                    2,
+                    5,
+                    10,
+                ],  # Minimum number of samples required to split an internal node.
+                "min_samples_leaf": [
+                    1,
+                    2,
+                    4,
+                ],  # Minimum number of samples required to be at a leaf node.
+                "bootstrap": [
+                    True,
+                    False,
+                ],  # Whether bootstrap samples are used when building trees.
                 "max_features": [
                     "auto",
                     "sqrt",
@@ -189,7 +225,10 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
                 "max_depth": [3, 4, 5],
                 "min_samples_split": [2, 5, 10],
                 "min_samples_leaf": [1, 2, 4],
-                "subsample": [0.8, 1.0],  # Fraction of samples used for fitting the individual learners.
+                "subsample": [
+                    0.8,
+                    1.0,
+                ],  # Fraction of samples used for fitting the individual learners.
             },
             GradientBoostingClassifier(),
         ),
@@ -214,14 +253,23 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
         # This can be more efficient and often leads to finding good hyperparameters
         # in less time compared to an exhaustive grid search.
         random_search = RandomizedSearchCV(
-            clf, param_distributions=param_grid, n_iter=1, cv=5, random_state=42, n_jobs=-1, verbose=3
+            clf,
+            param_distributions=param_grid,
+            n_iter=1,
+            cv=5,
+            random_state=42,
+            n_jobs=-1,
+            verbose=3,
         )
         print("Tuning with random search.")
         random_search.fit(X_train, y_train)
         # Print the best parameters found.
         print("Best Parameters:", random_search.best_params_)
 
-        with open(os.path.join(base_dir, "RS", f"{model}_{score_type}_best_parameters_report_RS.txt"), "w") as f:
+        with open(
+            os.path.join(base_dir, "RS", f"{model}_{score_type}_best_parameters_report_RS.txt"),
+            "w",
+        ) as f:
             f.write(str(random_search.best_params_))
         # Evaluate the best model on the test set.
         best_model = random_search.best_estimator_
@@ -229,7 +277,10 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
 
         print(classification_report(y_test, y_pred))
         # Save the best parameters.
-        with open(os.path.join(base_dir, "RS", f"{model}_{score_type}_classification_report_RS.txt"), "w") as f:
+        with open(
+            os.path.join(base_dir, "RS", f"{model}_{score_type}_classification_report_RS.txt"),
+            "w",
+        ) as f:
             f.write(classification_report(y_test, y_pred))
     elif search_type == "GS":
         # Perform grid search with cross-validation
@@ -246,14 +297,20 @@ def best_parameter_estimator(model: str, score_type: str, search_type: str):
         grid_search.fit(X_train, y_train)
         print("Best Parameters:", grid_search.best_params_)
         # Save the best parameters.
-        with open(os.path.join(base_dir, "GS", f"{model}_{score_type}_best_parameters_report_GS.txt"), "w") as f:
+        with open(
+            os.path.join(base_dir, "GS", f"{model}_{score_type}_best_parameters_report_GS.txt"),
+            "w",
+        ) as f:
             f.write(str(grid_search.best_params_))
         # Evaluate the best model on the test set.
         best_model = grid_search.best_estimator_
         y_pred = best_model.predict(X_test)
 
         print(classification_report(y_test, y_pred))
-        with open(os.path.join(base_dir, "GS", f"{model} _{score_type}_classification_report_GS.txt"), "w") as f:
+        with open(
+            os.path.join(base_dir, "GS", f"{model} _{score_type}_classification_report_GS.txt"),
+            "w",
+        ) as f:
             f.write(classification_report(y_test, y_pred))
     else:
         print("Invalid search type. Search types are GS or RS")
@@ -301,12 +358,24 @@ def train(model_name: str, score_type: str, search: str):
     base_dir = os.path.join("models", model_name)
     if search == "RS":
         with open(
-            os.path.join(base_dir, "parameters", "RS", f"{model_name}_{score_type}_best_parameters_report_RS.txt"), "r"
+            os.path.join(
+                base_dir,
+                "parameters",
+                "RS",
+                f"{model_name}_{score_type}_best_parameters_report_RS.txt",
+            ),
+            "r",
         ) as file:
             parameter_string = file.readline()
     elif search == "GS":
         with open(
-            os.path.join(base_dir, "parameters", "GS", f"{model_name}_{score_type}_best_parameters_report_GS.txt"), "r"
+            os.path.join(
+                base_dir,
+                "parameters",
+                "GS",
+                f"{model_name}_{score_type}_best_parameters_report_GS.txt",
+            ),
+            "r",
         ) as file:
             parameter_string = file.readline()
     else:
@@ -379,14 +448,30 @@ def train(model_name: str, score_type: str, search: str):
     print(f"Training time: {end_time - start_time:.2f} seconds")
     # Save the model and the vectorizer to files.
     if search == "RS":
-        model_filename = os.path.join(base_dir, "model", "RS", f"{model_name}_{score_type}_classifier_model_RS.onnx")
+        model_filename = os.path.join(
+            base_dir,
+            "model",
+            "RS",
+            f"{model_name}_{score_type}_classifier_model_RS.onnx",
+        )
         vectorizer_filename = os.path.join(
-            base_dir, "model", "RS", f"{model_name}_{score_type}_tfidf_vectorizer_RS.json"
+            base_dir,
+            "model",
+            "RS",
+            f"{model_name}_{score_type}_tfidf_vectorizer_RS.json",
         )
     elif search == "GS":
-        model_filename = os.path.join(base_dir, "model", "GS", f"{model_name}_{score_type}_classifier_model_GS.onnx")
+        model_filename = os.path.join(
+            base_dir,
+            "model",
+            "GS",
+            f"{model_name}_{score_type}_classifier_model_GS.onnx",
+        )
         vectorizer_filename = os.path.join(
-            base_dir, "model", "GS", f"{model_name}_{score_type}_tfidf_vectorizer_GS.json"
+            base_dir,
+            "model",
+            "GS",
+            f"{model_name}_{score_type}_tfidf_vectorizer_GS.json",
         )
 
     # Define the intial type for input.

@@ -25,7 +25,8 @@ class SmartStringFilter:
             vectorizer_json = json.load(f)
 
         vectorizer = TfidfVectorizer(
-            analyzer=vectorizer_json["analyzer"], ngram_range=tuple(vectorizer_json["ngram_range"])
+            analyzer=vectorizer_json["analyzer"],
+            ngram_range=tuple(vectorizer_json["ngram_range"]),
         )
 
         vectorizer.vocabulary_ = vectorizer_json["vocabulary_"]
