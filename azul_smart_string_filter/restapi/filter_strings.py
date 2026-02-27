@@ -90,8 +90,8 @@ def main():
     """Start server."""
     s = Settings()
     log_level = s.log_level.lower()
-    if log_level == "warning":
-        log_level = "warn"
+    if log_level == "warn":
+        log_level = "warning"
     uvicorn.run(app, host="0.0.0.0", port=8851, log_level=log_level)  # noqa S104
 
 
