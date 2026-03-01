@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from starlette_exporter import PrometheusMiddleware, handle_metrics
 
 from azul_smart_string_filter.lib import SmartStringFilter
+from azul_smart_string_filter.restapi.settings import Settings
 
 
 class FileTypes(str, Enum):
@@ -90,7 +91,11 @@ def is_supported_file_format(file_format, file_format_enum):
 
 def main():
     """Start server."""
-    uvicorn.run(app, host="0.0.0.0", port=8851, log_level="info")  # noqa S104
+    s = Settings()
+    log_level = s.log_level.lower()
+    if log_level == "warn":
+        log_level = "warning"
+    uvicorn.run(app, host="0.0.0.0", port=8851, log_level=log_level)  # noqa S104
 
 
 if __name__ == "__main__":
