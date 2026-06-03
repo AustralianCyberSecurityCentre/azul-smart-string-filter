@@ -9,7 +9,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-05-27T23:00:34.88934637Z"
+exclude-newer = "2026-05-27T23:12:56.620280441Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -104,7 +104,7 @@ requires-dist = [
     { name = "azul-bedrock", specifier = ">=9.0.32", index = "https://devpi.acsc.internal/azul/stable/" },
     { name = "fastapi", specifier = ">=0.128.0" },
     { name = "onnx", specifier = ">=1.20.1" },
-    { name = "onnxruntime", specifier = ">=1.23.2" },
+    { name = "onnxruntime", specifier = "==1.26.0" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "scikit-learn", specifier = ">=1.8.0" },
     { name = "skl2onnx", specifier = ">=1.20.0" },
