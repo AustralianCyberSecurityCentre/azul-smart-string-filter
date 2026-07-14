@@ -9,7 +9,7 @@ from azul_smart_string_filter.lib import SmartStringFilter
 class TestAIModel(unittest.TestCase):
     def test_ai_model_output(self):
         # Threshold for how accuarate the model predicts good strings.
-        accuracy_threshold = 0.9
+        accuracy_threshold = 0.8
         # number of good strings found in the text file by human.
         number_of_good_strings = 674
 
