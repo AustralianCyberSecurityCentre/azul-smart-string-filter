@@ -7,6 +7,34 @@ Uses an AI model to find interesting strings in a PE file.
 ```bash
 pip install azul-smart-string-filter
 ```
+# Regenerating previous model
+
+As onyx is updated the model will periodically need to be re-generated.
+
+To do this the recommeneded method is to rebuild the last known best model.
+This can be achieved with the following commands (takes a long time to re-do parameters):
+
+```bash
+# Install smart-string-filter and make the venv active
+uv sync
+source .venv/bin/activate
+# Remove existing parameters and report so new parameters can be written over top.
+rm ./models/RF/parameters/GS/RF_accuracy_classification_report_GS.txt
+rm ./models/RF/parameters/GS/RF_accuracy_best_parameters_report_GS.txt
+# Run the tuner (this takes 24hours to complete on a 4CPU dev VM.)
+# The command here outputs to a log file and disown's the process so the process outlives the terminal which is necessary.
+azul-smart-string-filter tune RF accuracy GS > params-out.log & disown
+# Remove old model and vectorizer so when they are re-created it's known.
+rm ./models/RF/model/GS/RF_accuracy_classifier_model_GS.onnx
+rm ./models/RF/model/GS/RF_accuracy_tfidf_vectorizer_GS.json
+# Train the model with the selected parameters (takes ~200seconds)
+azul-smart-string-filter trainmodel RF accuracy GS > train-out.log
+
+# Copy the resulting models
+cp ./models/RF/model/GS/RF_accuracy_classifier_model_GS.onnx ./azul_smart_string_filter/model/model.onnx
+cp ./models/RF/model/GS/RF_accuracy_tfidf_vectorizer_GS.json ./azul_smart_string_filter/model/vectorizer.json
+```
+
 
 ## Usage
 

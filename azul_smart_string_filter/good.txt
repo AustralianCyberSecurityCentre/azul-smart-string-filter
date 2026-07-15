@@ -15724,10 +15724,8 @@ set_package_config_for_upgrade
 get_install_directory
 ensure_package_files_have_compatible_attributes
 rename_legacy_package_version
-戀捡畫彰
 existing_version
 remove_packaging_files_prior_to_upgrade
-戀捡畫彰档
 anged_files
 remove_shim_directors
 remove_cache_for_package
@@ -25222,7 +25220,6 @@ Ex: id uri:sampleDevice  
 Ex: metadataversion 0   
 DBGHOST-0001
 Deserializing xAddrs  
-`WYH
 Initializing CLI
 disco  
 General commands     
