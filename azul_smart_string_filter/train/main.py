@@ -408,7 +408,7 @@ def train(model_name: str, score_type: str, search: str):
             parameters[param_name] = None
             continue
 
-        if value.lower() == "true" or value.lower() == "false":
+        if isinstance(value, str) and (value.lower() == "true" or value.lower() == "false"):
             value = bool(value)
 
         parameters[param_name] = value
