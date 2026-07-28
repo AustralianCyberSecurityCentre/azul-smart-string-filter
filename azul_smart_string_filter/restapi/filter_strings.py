@@ -67,7 +67,7 @@ async def submit_unfiltered_strings(
     file_format: str = Query(...),
     # strings to be filtered.
     strings: list[SearchResult] = Body(...),
-) -> list[SearchResult]:
+) -> list[SearchResult] | None:
     """Endpoint that handles the POST request.
 
     It expects a file_format along with a list of strings for json body.

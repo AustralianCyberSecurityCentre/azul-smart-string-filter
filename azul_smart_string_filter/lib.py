@@ -42,6 +42,6 @@ class SmartStringFilter:
         input_name = sess.get_inputs()[0].name
         label_name = sess.get_outputs()[0].name
         predictions = sess.run([label_name], {input_name: input_data})[0]
-        predictions = [bool(x) for x in predictions]
+        predictions = [bool(x) for x in predictions]  # ty: ignore[not-iterable] ty thinks it's possible that predictions is a 0-d array
 
         return predictions
