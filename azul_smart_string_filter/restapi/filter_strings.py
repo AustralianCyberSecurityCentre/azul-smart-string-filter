@@ -24,7 +24,10 @@ class FileTypes(str, Enum):
         "executable/windows/pe64",
         "executable/pe32",
         "executable/dll32",
-        "executable/linux",
+        "executable/linux/so32",
+        "executable/linux/so64",
+        "executable/linux/elf64",
+        "executable/linux/elf32",
     ]
 
 
