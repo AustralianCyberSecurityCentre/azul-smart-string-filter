@@ -10,11 +10,12 @@ from starlette_exporter import PrometheusMiddleware, handle_metrics
 from azul_smart_string_filter.lib import SmartStringFilter
 from azul_smart_string_filter.restapi.settings import Settings
 
+MODEL_TYPE = "combined" # a model trained on a combination of windows and linux executable strings
 
 class FileTypes(str, Enum):
-    """File types that are accepted. Currently only handle windows pe strings."""
+    """File types that are accepted. Currently only handle windows and linux executable strings."""
 
-    windows = [
+    supported_executables = [
         "executable/windows/dll32",
         "executable/windows/dll64",
         "executable/windows/pe",
@@ -22,6 +23,7 @@ class FileTypes(str, Enum):
         "executable/windows/pe64",
         "executable/pe32",
         "executable/dll32",
+        "executable/linux",
     ]
 
 
@@ -73,10 +75,10 @@ async def submit_unfiltered_strings(
     It expects a file_format along with a list of strings for json body.
     It returns a list of FilteredStrings.
     """
-    if is_supported_file_format(file_format, FileTypes.windows):
+    if is_supported_file_format(file_format, FileTypes.supported_executables):
         filtered_strings = []
         strings_to_be_filtered = [obj.string for obj in strings]
-        predictions = gsf.find_legible_strings(strings_to_be_filtered)
+        predictions = gsf.find_legible_strings(strings_to_be_filtered, MODEL_TYPE)
 
         for string, is_good in zip(strings, predictions, strict=False):
             if is_good:
