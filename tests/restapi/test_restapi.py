@@ -12,12 +12,12 @@ class TestRestAPI(unittest.TestCase):
         response = client.get("/")
         self.assertEqual(response.status_code, 200)
 
-    def test_string_filter_good(self):
+    def test_string_filter_good_windows(self):
         file_format = "executable/windows/"
         list_of_strings = [
             SearchResult(string="string1", offset=1),
             SearchResult(string="string2", offset=2),
-            SearchResult(string="dsfdf asfdsf", offset=3),
+            SearchResult(string=">-uiF;u", offset=3),
             SearchResult(string="string3", offset=4),
         ]
         # this is how metastore converts searchresult.strings to send to the string filter
@@ -32,8 +32,34 @@ class TestRestAPI(unittest.TestCase):
 
         self.assertEqual(response.json(), expected_response)
 
-    def test_string_filter_bad(self):
+    def test_string_filter_good_linux(self):
+        file_format = "executable/linux/"
+        list_of_strings = [
+            SearchResult(string="string1", offset=1),
+            SearchResult(string="string2", offset=2),
+            SearchResult(string=">-uiF;u", offset=3),
+            SearchResult(string="string3", offset=4),
+        ]
+        # this is how metastore converts searchresult.strings to send to the string filter
+        converted_results = [{"string": sr.string, "offset": sr.offset} for sr in list_of_strings]
+        response = client.post("/v0/strings/?file_format=" + file_format, json=converted_results)
+        self.assertEqual(response.status_code, 200)
+        expected_response = [
+            {"string": "string1", "offset": 1},
+            {"string": "string2", "offset": 2},
+            {"string": "string3", "offset": 4},
+        ]
+
+        self.assertEqual(response.json(), expected_response)
+
+    def test_string_filter_bad_windows(self):
         file_format = "executable/windows/"
-        list_of_strings = ["string1", 1, "dsfdf asfdsf", "string3"]
+        list_of_strings = ["string1", 1, ">-uiF;u", "string3"]
+        response = client.post("/v0/strings/?file_format=" + file_format, json=list_of_strings)
+        self.assertEqual(response.status_code, 422)
+
+    def test_string_filter_bad_linux(self):
+        file_format = "executable/linux/"
+        list_of_strings = ["string1", 1, ">-uiF;u", "string3"]
         response = client.post("/v0/strings/?file_format=" + file_format, json=list_of_strings)
         self.assertEqual(response.status_code, 422)
