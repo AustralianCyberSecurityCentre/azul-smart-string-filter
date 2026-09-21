@@ -18,7 +18,6 @@ class SmartStringFilter:
         batch_size: int = 100,
     ) -> list[bool]:
         """Return one complete result list after classifying in memory-safe batches."""
-
         model_type = model_type.strip().lower()
 
         if not model_type or not model_type.replace("_", "").replace("-", "").isalnum():
@@ -40,15 +39,10 @@ class SmartStringFilter:
         )
 
         if not os.path.isfile(model_path):
-            raise FileNotFoundError(
-                f"Model for type {model_type!r} was not found: {model_path}"
-            )
+            raise FileNotFoundError(f"Model for type {model_type!r} was not found: {model_path}")
 
         if not os.path.isfile(vectorizer_path):
-            raise FileNotFoundError(
-                f"Vectorizer for type {model_type!r} was not found: "
-                f"{vectorizer_path}"
-            )
+            raise FileNotFoundError(f"Vectorizer for type {model_type!r} was not found: {vectorizer_path}")
 
         with open(vectorizer_path, "r", encoding="utf-8") as file:
             vectorizer_json = json.load(file)
@@ -78,20 +72,14 @@ class SmartStringFilter:
 
             # Convert the sparse matrix to float32 before making it dense. This
             # avoids creating a much larger intermediate float64 dense matrix.
-            input_data = (
-                vectorizer.transform(batch)
-                .astype(np.float32)
-                .toarray()
-            )
+            input_data = vectorizer.transform(batch).astype(np.float32).toarray()
 
             batch_predictions = session.run(
                 [label_name],
                 {input_name: input_data},
             )[0]
 
-            predictions.extend(
-                bool(prediction) for prediction in batch_predictions
-            )
+            predictions.extend(bool(prediction) for prediction in batch_predictions)
 
         # The WebUI receives a single list containing results for every input
         # string, in the same order as the original strings list.

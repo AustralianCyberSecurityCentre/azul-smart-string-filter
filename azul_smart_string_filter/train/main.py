@@ -20,7 +20,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
-
 RANDOM_SEARCH_ITERATIONS = 50
 
 
@@ -72,10 +71,7 @@ def load_training_strings(model_type: str):
     overlap = set(good_strings).intersection(bad_strings)
     if overlap:
         examples = ", ".join(repr(value) for value in sorted(overlap)[:5])
-        raise ValueError(
-            f"Found {len(overlap)} strings labelled as both good and bad. "
-            f"Examples: {examples}"
-        )
+        raise ValueError(f"Found {len(overlap)} strings labelled as both good and bad. Examples: {examples}")
 
     if not good_strings or not bad_strings:
         raise ValueError("Both the good and bad training files must contain at least one string")
@@ -86,18 +82,13 @@ def load_training_strings(model_type: str):
 def classifier_parameter_grid(param_grid):
     """Prefix classifier parameters for use in a scikit-learn Pipeline."""
     if isinstance(param_grid, list):
-        return [
-            {f"classifier__{name}": values for name, values in grid.items()}
-            for grid in param_grid
-        ]
+        return [{f"classifier__{name}": values for name, values in grid.items()} for grid in param_grid]
     return {f"classifier__{name}": values for name, values in param_grid.items()}
 
 
 def save_best_parameters(filename: str, parameters: dict):
     """Save classifier parameters in a safely reloadable format."""
-    classifier_parameters = {
-        name.removeprefix("classifier__"): value for name, value in parameters.items()
-    }
+    classifier_parameters = {name.removeprefix("classifier__"): value for name, value in parameters.items()}
     with open(filename, "w", encoding="utf-8") as file:
         json.dump(classifier_parameters, file, indent=2, sort_keys=True)
 
@@ -115,10 +106,7 @@ def load_best_parameters(filename: str):
     if not isinstance(parameters, dict):
         raise ValueError(f"Invalid parameter report: {filename}")
 
-    return {
-        name.removeprefix("classifier__").removeprefix("model__"): value
-        for name, value in parameters.items()
-    }
+    return {name.removeprefix("classifier__").removeprefix("model__"): value for name, value in parameters.items()}
 
 
 def best_parameter_estimator(model: str, score_type: str, search_type: str, model_type: str):

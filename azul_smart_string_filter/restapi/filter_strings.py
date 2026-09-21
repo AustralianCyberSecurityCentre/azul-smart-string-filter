@@ -10,7 +10,8 @@ from starlette_exporter import PrometheusMiddleware, handle_metrics
 from azul_smart_string_filter.lib import SmartStringFilter
 from azul_smart_string_filter.restapi.settings import Settings
 
-MODEL_TYPE = "combined" # a model trained on a combination of windows and linux executable strings
+MODEL_TYPE = "combined"  # a model trained on a combination of windows and linux executable strings
+
 
 class FileTypes(str, Enum):
     """File types that are accepted. Currently only handle windows and linux executable strings."""
