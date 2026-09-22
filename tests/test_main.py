@@ -1,6 +1,5 @@
-"""Test cases for plugin output."""
+"""Evaluate SmartStringFilter against hardcoded Windows and Linux labels."""
 
-import os
 import unittest
 
 from azul_smart_string_filter.lib import SmartStringFilter
@@ -11,23 +10,103 @@ MINIMUM_ACCURACY_PERCENT = 95.0
 
 
 class TestAIModel(unittest.TestCase):
-    def test_ai_model_output_windows(self):
-        """Measure the model against the hardcoded GOOD/BAD ground truth."""
-        base_file_dir = os.path.join(os.path.dirname(__file__), "data")
-        file_path = os.path.join(base_file_dir, "strings_list.txt")
-        string_list = []
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
-            for line in file:
-                string = line.strip()
-                string_list.append(string)
+    def _evaluate_model(
+        self,
+        platform_name: str,
+        expected_results: list[tuple[str, bool]],
+    ) -> None:
+        """Run the model and report classification metrics for labelled strings."""
+        self.assertTrue(expected_results, "The labelled test data cannot be empty")
 
-        string_filter = SmartStringFilter()
-        predictions = string_filter.find_legible_strings(
-            string_list,
+        good_strings = {string for string, expected_good in expected_results if expected_good}
+        bad_strings = {string for string, expected_good in expected_results if not expected_good}
+        overlapping_labels = good_strings & bad_strings
+        self.assertFalse(
+            overlapping_labels,
+            f"Strings labelled as both GOOD and BAD: {sorted(overlapping_labels)!r}",
+        )
+
+        strings = [string for string, _expected_good in expected_results]
+        predictions = SmartStringFilter().find_legible_strings(
+            strings,
             model_type=MODEL_TYPE,
         )
-        self.assertEqual(len(predictions), len(string_list))
+        self.assertEqual(len(predictions), len(expected_results))
 
+        true_good = 0
+        true_bad = 0
+        false_good = 0
+        missed_good = 0
+        false_positives: list[str] = []
+        false_negatives: list[str] = []
+
+        for (string, expected_good), prediction in zip(
+            expected_results,
+            predictions,
+            strict=True,
+        ):
+            predicted_good = bool(prediction)
+
+            if expected_good and predicted_good:
+                true_good += 1
+            elif not expected_good and not predicted_good:
+                true_bad += 1
+            elif not expected_good and predicted_good:
+                false_good += 1
+                false_positives.append(string)
+            else:
+                missed_good += 1
+                false_negatives.append(string)
+
+        total = len(expected_results)
+        correct = true_good + true_bad
+        incorrect = false_good + missed_good
+        expected_good_count = sum(expected_good for _, expected_good in expected_results)
+        expected_bad_count = total - expected_good_count
+        accuracy_percent = correct / total * 100
+        good_precision = true_good / (true_good + false_good) if true_good + false_good else 0.0
+        good_recall = true_good / (true_good + missed_good) if true_good + missed_good else 0.0
+        good_f1 = (
+            2 * good_precision * good_recall / (good_precision + good_recall) if good_precision + good_recall else 0.0
+        )
+
+        print(f"\nSmartStringFilter {platform_name} labelled evaluation")
+        print(f"Model type:          {MODEL_TYPE}")
+        print(f"Labelled strings:    {total}")
+        print(f"Expected GOOD:       {expected_good_count}")
+        print(f"Expected BAD:        {expected_bad_count}")
+        print(f"Correct:             {correct}")
+        print(f"Incorrect:           {incorrect}")
+        print(f"Accuracy:            {accuracy_percent:.2f}%")
+        print(f"GOOD precision:      {good_precision * 100:.2f}%")
+        print(f"GOOD recall:         {good_recall * 100:.2f}%")
+        print(f"GOOD F1:             {good_f1 * 100:.2f}%")
+        print(f"True GOOD:           {true_good}")
+        print(f"True BAD:            {true_bad}")
+        print(f"False GOOD:          {false_good}")
+        print(f"Missed GOOD:         {missed_good}")
+
+        if false_positives:
+            print("\nExpected BAD but model predicted GOOD:")
+            for string in false_positives:
+                print(f"  {string!r}")
+
+        if false_negatives:
+            print("\nExpected GOOD but model predicted BAD:")
+            for string in false_negatives:
+                print(f"  {string!r}")
+
+        self.assertGreaterEqual(
+            accuracy_percent,
+            MINIMUM_ACCURACY_PERCENT,
+            (
+                f"{platform_name} model accuracy {accuracy_percent:.2f}% is below "
+                f"the required {MINIMUM_ACCURACY_PERCENT:.2f}%"
+            ),
+        )
+
+    def test_ai_model_output_windows(self):
+        """Measure the model against the hardcoded GOOD/BAD ground truth for windows."""
         # Hardcoded ground truth. True means GOOD and False means BAD.
         expected_results: list[tuple[str, bool]] = [
             ("!This program cannot be run in DOS mode.", True),
@@ -1035,90 +1114,321 @@ class TestAIModel(unittest.TestCase):
             ("lpTargetPath", True),
         ]
 
-        # These are the hardcoded GOOD and BAD lists used as ground truth.
-        good_strings = [string for string, expected_good in expected_results if expected_good]
-        bad_strings = [string for string, expected_good in expected_results if not expected_good]
+        self._evaluate_model("Windows", expected_results)
 
-        good_string_set = set(good_strings)
-        bad_string_set = set(bad_strings)
-        overlapping_labels = good_string_set & bad_string_set
-        self.assertFalse(
-            overlapping_labels,
-            f"Strings labelled as both GOOD and BAD: {sorted(overlapping_labels)!r}",
-        )
+    def test_ai_model_output_linux(self):
+        """Measure the model against the hardcoded GOOD/BAD ground truth for linux."""
+        # Hardcoded ground truth. True means GOOD and False means BAD.
+        expected_results: list[tuple[str, bool]] = [
+            ("ATUH", False),
+            ("H9+t", False),
+            ("]A\\A^", False),
+            ("[]A\\A^", False),
+            ("AVAUATI", False),
+            ("]A\\A]A^", False),
+            ("[]A\\A]A^", False),
+            ("\\$pH", False),
+            ("l$xH", False),
+            ("D$h1", False),
+            ("D$heH+", False),
+            ("\\$pH", False),
+            ("l$x1", False),
+            ("H3FtH3V|H\t", False),
+            ("t\tL\t", False),
+            ("@ H=", False),
+            ("CXE1", False),
+            ("t$ H", False),
+            ("E,)H", False),
+            ("t$ H", False),
+            ("t$ H", False),
+            ("t$(H", False),
+            ("D$0H", False),
+            ("[A\\]", False),
+            (")u\nf", False),
+            ("t(L1", False),
+            ("AUATL", False),
+            ("[]A\\A]", False),
+            ("AUATD", False),
+            ("I9,$tWH", False),
+            ("[]A\\A]", False),
+            ("AUATI", False),
+            ("|$ I", False),
+            ("t$(I", False),
+            ("M@H1", False),
+            ("D$0I", False),
+            ("L$8I3EHI3MPH\t", False),
+            ("[]A\\A]", False),
+            ("D$ I", False),
+            ("D$(I", False),
+            ("D$0I", False),
+            ("D$8I", False),
+            ("D$@I", False),
+            ("D$HI", False),
+            ("D$PI", False),
+            ("D$XI", False),
+            ("D$`I", False),
+            ("AVAUD", False),
+            ("[A\\A]A^A_]", False),
+            ("AWAVAUA", False),
+            ("[A\\A]A^A_]", False),
+            ("D$0H", False),
+            ("L$tH", False),
+            ("D$@H", False),
+            ("T$HH", False),
+            ("D$ H", False),
+            ("D$pH", False),
+            ("D$TH", False),
+            ("T$hH", False),
+            ("D$`M9't\rA", False),
+            ("t$`L", False),
+            ("t$0H", False),
+            ("|$8H", False),
+            ("t$@H", False),
+            ("L$P ", False),
+            ("L$R ", False),
+            ("T$$H", False),
+            ("D$0H", False),
+            ("T$8H", False),
+            ("t$`L", False),
+            ("D$@H", False),
+            ("T$HH", False),
+            ("D$ H", False),
+            ("D$pH", False),
+            ("D$TH", False),
+            ("T$h1", False),
+            ("D$tH", False),
+            ("D$0H", False),
+            ("T$8H", False),
+            ("t$`L", False),
+            ("D$@H", False),
+            ("T$HH", False),
+            ("D$ H", False),
+            ("D$pH", False),
+            ("D$TH", False),
+            ("T$h1", False),
+            ("D$tH", False),
+            ("t.L9`", False),
+            ("t$`H", False),
+            ("t$`L", False),
+            ("AWAVI", False),
+            ("ATSH", False),
+            ("D$h1", False),
+            ("tDH9X", False),
+            ("T$heH+", False),
+            ("[A\\A]A^A_]", False),
+            ("AWAVAUATI", False),
+            ("H@H1", False),
+            ("H3PHH3HPH\t", False),
+            ("H@H1", False),
+            ("HPH1", False),
+            ("P@u\rH", False),
+            ("[A\\A]A^A_]", False),
+            ("AWAVI", False),
+            ("AUATA", False),
+            ("USIc", False),
+            ("lt1A", False),
+            ("[]A\\A]A^A_", False),
+            ("@,<)t'", False),
+            ("[]A\\A^A_", False),
+            ("EH[]A\\A^A_", False),
+            ("ipv6 tunnel", True),
+            ("netlink interface", True),
+            ("tunnel protocols", True),
+            ("tunnel device", True),
+            ("./include/net/dst.h", True),
+            ("./include/net/ip_tunnels.h", True),
+            ("ip6_vti0", False),
+            ("ip6_vti%%d", False),
+            ("vti6", False),
+            ("3vti6 init: failed to register %s\n", True),
+            ("4%s: Local routing loop detected!\n", True),
+            ("3iptunnel_xmit_stats pcpu_stat_type=%d\n", True),
+            ("description=IPv6 virtual tunnel interface", True),
+            ("author=Steffen Klassert", True),
+            ("alias=netdev-ip6_vti0", True),
+            ("alias=rtnl-link-vti6", True),
+            ("license=GPL", True),
+            ("depends=ip6_tunnel,xfrm6_tunnel,tunnel6", True),
+            ("intree=Y", True),
+            ("name=ip6_vti", True),
+            ("retpoline=Y", True),
+            ("vermagic=7.2.7-reform1 SMP preempt mod_unload ", True),
+            ("GCC: (GNU) 16.2.1 20260810", True),
+            ("GCC: (GNU) 16.2.1 20260810", True),
+            ("GCC: (GNU) 16.2.1 20260810", True),
+            ("ip6_vti", False),
+            ("Linux", True),
+            ("Linux", True),
+            ("ip6_vti.c", True),
+            ("vti6_tunnel_init", True),
+            ("vti6_net_ops", True),
+            ("vti_esp6_protocol", True),
+            ("vti_ah6_protocol", True),
+            ("vti_ipcomp6_protocol", True),
+            ("vti_ipv6_handler", True),
+            ("vti_ip6ip_handler", True),
+            ("vti6_link_ops", True),
+            ("vti6_net_id", True),
+            ("qdisc_tx_busylock_key.2", True),
+            ("__already_done.0", True),
+            ("vti6_tnl_xmit.cold", True),
+            ("vti6_netdev_ops", True),
+            ("vti6_tunnel_cleanup", True),
+            ("__UNIQUE_ID_modinfo_1278", True),
+            ("__UNIQUE_ID_modinfo_1277", True),
+            ("__UNIQUE_ID_modinfo_1276", True),
+            ("__UNIQUE_ID_modinfo_1275", True),
+            ("__UNIQUE_ID_modinfo_1274", True),
+            ("__UNIQUE_ID_addressable_cleanup_module_1273", True),
+            ("__UNIQUE_ID_addressable_init_module_1272", True),
+            ("vti6_policy", True),
+            (".LC5", True),
+            (".LC9", True),
+            (".LC6", True),
+            ("__pfx_vti6_validate", True),
+            ("__pfx_vti6_get_size", True),
+            ("__pfx_vti6_fill_info", True),
+            ("__pfx_vti6_dellink", True),
+            ("__pfx_vti6_exit_rtnl_net", True),
+            ("__pfx_vti6_link_config", True),
+            ("__pfx_vti6_dev_init", True),
+            ("__pfx_vti6_tnl_xmit", True),
+            ("__pfx_vti6_dev_setup", True),
+            ("__pfx_vti6_init_net", True),
+            ("__pfx___xfrm_policy_check2.constprop.0", True),
+            ("__pfx_vti6_netlink_parms", True),
+            ("__pfx_vti6_rcv_cb", True),
+            ("__pfx_vti6_tnl_bucket", True),
+            ("__pfx_vti6_tnl_create2", True),
+            ("__pfx_vti6_dev_uninit", True),
+            ("__pfx_vti6_locate", True),
+            ("__pfx_vti6_newlink", True),
+            ("__pfx_vti6_update.isra.0", True),
+            ("__pfx_vti6_siocdevprivate", True),
+            ("__pfx_vti6_changelink", True),
+            ("__pfx_vti6_tnl_lookup", True),
+            ("__pfx_vti6_err", True),
+            ("__pfx_vti6_input_proto", True),
+            ("__pfx_vti6_rcv_tunnel", True),
+            ("__pfx_vti6_rcv", True),
+            ("ip6_vti.mod.c", True),
+            ("__UNIQUE_ID_modinfo_396", True),
+            ("__UNIQUE_ID_modinfo_395", True),
+            ("__UNIQUE_ID_modinfo_394", True),
+            ("module-common.c", True),
+            ("__UNIQUE_ID_modinfo_397", True),
+            ("__UNIQUE_ID_note_395", True),
+            ("__UNIQUE_ID_note_394", True),
+            ("orc_header", True),
+            ("xfrm6_protocol_deregister", True),
+            ("strcpy", True),
+            ("__ipv6_addr_type", True),
+            ("_copy_from_user", True),
+            ("xfrm6_tunnel_register", True),
+            ("__rcu_read_lock", True),
+            ("__this_module", True),
+            ("ip_output", True),
+            ("ip6_tnl_get_cap", True),
+            ("__xfrm_decode_session", True),
+            ("__SCT__preempt_schedule", True),
+            ("__skb_ext_del", True),
+            ("this_cpu_off", True),
+            ("rtnl_link_register", True),
+            ("ip_tunnel_header_ops", True),
+            ("xfrm_state_lookup", True),
+            ("ip6_output", True),
+            ("rt6_lookup", True),
+            ("sysctl_fb_tunnels_only_for_init_net", True),
+            ("__xfrm_policy_check", True),
+            ("net_ratelimit", True),
+            ("unregister_netdevice_queue", True),
+            ("__xfrm_state_destroy", True),
+            ("netdev_state_change", True),
+            ("xfrm_lookup_route", True),
+            ("ip6_update_pmtu", True),
+            ("dev_addr_mod", True),
+            ("__x86_indirect_thunk_rax", True),
+            ("alloc_netdev_mqs", True),
+            ("_printk", True),
+            ("ip6_tnl_xmit_ctl", True),
+            ("__ref_stack_chk_guard", True),
+            ("__stack_chk_fail", True),
+            ("refcount_warn_saturate", True),
+            ("make_kuid", True),
+            ("ip6_route_output_flags", True),
+            ("ip_route_output_key_hash", True),
+            ("icmpv6_ndo_send", True),
+            ("sized_strscpy", True),
+            ("rcuref_get_slowpath", True),
+            ("__dev_get_by_index", True),
+            ("rtnl_link_unregister", True),
+            ("__pfx_init_module", True),
+            ("rtnl_dev_link_net_capable", True),
+            ("xfrm6_tunnel_spi_lookup", True),
+            ("__rcu_read_unlock", True),
+            ("ip6_mtu", False),
+            ("sk_skb_reason_drop", True),
+            ("icmp_ndo_send", True),
+            ("xfrm_input", True),
+            ("ip6_tnl_get_iflink", True),
+            ("nla_put", True),
+            ("register_netdev", True),
+            ("free_netdev", True),
+            ("dev_valid_name", True),
+            ("ns_capable", True),
+            ("unregister_pernet_device", True),
+            ("__pfx_cleanup_module", True),
+            ("__x86_return_thunk", True),
+            ("nla_memcpy", True),
+            ("_copy_to_user", True),
+            ("__pskb_pull_tail", True),
+            ("ip6_redirect", True),
+            ("jiffies", True),
+            ("skb_scrub_packet", True),
+            ("sprintf", True),
+            ("__preempt_count", True),
+            ("ipv4_mtu", False),
+            ("ip6_tnl_get_link_net", True),
+            ("dst_release", True),
+            ("get_random_bytes", True),
+            ("xfrm6_tunnel_deregister", True),
+            ("ip6_tnl_rcv_ctl", True),
+            ("xfrm6_protocol_register", True),
+            ("synchronize_net", True),
+            ("register_netdevice", True),
+            (".symtab", True),
+            (".strtab", True),
+            (".shstrtab", True),
+            (".rela__bug_table", True),
+            (".rela__patchable_function_entries", True),
+            (".rela.text", True),
+            (".bss", False),
+            (".rela.data", True),
+            (".rela.rodata", True),
+            (".rela.init.text", True),
+            (".rela.smp_locks", True),
+            (".rela.exit.text", True),
+            (".modinfo", True),
+            (".rela.exit.data", True),
+            (".rela.init.data", True),
+            (".rela.data..read_mostly", True),
+            (".data..once", True),
+            (".comment", True),
+            (".note.GNU-stack", True),
+            (".note.gnu.property", True),
+            (".rela.static_call_sites", True),
+            (".rela.retpoline_sites", True),
+            (".rela.return_sites", True),
+            (".rela.call_sites", True),
+            (".orc_unwind", True),
+            (".rela.orc_unwind_ip", True),
+            (".note.gnu.build-id", True),
+            (".rela.gnu.linkonce.this_module", True),
+            (".note.Linux", True),
+            (".orc_header", True),
+        ]
 
-        # Require the external input file to contain exactly the labelled test
-        # strings, including duplicate occurrences.
-        self.assertCountEqual(
-            string_list,
-            [string for string, _expected_good in expected_results],
-            "strings_list.txt does not match the hardcoded ground truth",
-        )
-
-        expected_by_string = {string: expected_good for string, expected_good in expected_results}
-
-        true_good = 0
-        true_bad = 0
-        false_good = 0
-        missed_good = 0
-        false_positives: list[str] = []
-        false_negatives: list[str] = []
-
-        for string, prediction in zip(string_list, predictions, strict=True):
-            expected_good = expected_by_string[string]
-            predicted_good = bool(prediction)
-
-            if expected_good and predicted_good:
-                true_good += 1
-            elif not expected_good and not predicted_good:
-                true_bad += 1
-            elif not expected_good and predicted_good:
-                false_good += 1
-                false_positives.append(string)
-            else:
-                missed_good += 1
-                false_negatives.append(string)
-
-        total = len(string_list)
-        correct = true_good + true_bad
-        accuracy_percent = (correct / total) * 100
-        good_precision = true_good / (true_good + false_good) if true_good + false_good else 0.0
-        good_recall = true_good / (true_good + missed_good) if true_good + missed_good else 0.0
-        good_f1 = (
-            2 * good_precision * good_recall / (good_precision + good_recall) if good_precision + good_recall else 0.0
-        )
-
-        print("\nSmartStringFilter labelled evaluation")
-        print(f"Model type:          {MODEL_TYPE}")
-        print(f"Labelled strings:    {total}")
-        print(f"Expected GOOD:       {len(good_strings)}")
-        print(f"Expected BAD:        {len(bad_strings)}")
-        print(f"Correct:             {correct}")
-        print(f"Incorrect:           {false_good + missed_good}")
-        print(f"Accuracy:            {accuracy_percent:.2f}%")
-        print(f"GOOD precision:      {good_precision * 100:.2f}%")
-        print(f"GOOD recall:         {good_recall * 100:.2f}%")
-        print(f"GOOD F1:             {good_f1 * 100:.2f}%")
-        print(f"True GOOD:           {true_good}")
-        print(f"True BAD:            {true_bad}")
-        print(f"False GOOD:          {false_good}")
-        print(f"Missed GOOD:         {missed_good}")
-
-        if false_positives:
-            print("\nExpected BAD but model predicted GOOD:")
-            for string in false_positives:
-                print(f"  {string!r}")
-
-        if false_negatives:
-            print("\nExpected GOOD but model predicted BAD:")
-            for string in false_negatives:
-                print(f"  {string!r}")
-
-        self.assertGreaterEqual(
-            accuracy_percent,
-            MINIMUM_ACCURACY_PERCENT,
-            f"Model accuracy {accuracy_percent:.2f}% is below the required {MINIMUM_ACCURACY_PERCENT:.2f}%",
-        )
+        self._evaluate_model("Linux", expected_results)
 
 
 if __name__ == "__main__":
