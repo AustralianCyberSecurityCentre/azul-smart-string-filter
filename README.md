@@ -14,6 +14,13 @@ As onyx is updated the model will periodically need to be re-generated.
 To do this the recommeneded method is to rebuild the last known best model.
 This can be achieved with the following commands (takes a long time to re-do parameters):
 
+The current model has been trained with both Windows and Linux data.
+The model was trained using LR f1 RS
+Command:
+```bash
+azul-smart-string-filter trainmodel LR f1 RS combined
+```
+
 ```bash
 # Install smart-string-filter and make the venv active
 uv sync
@@ -23,12 +30,12 @@ rm ./models/RF/parameters/GS/RF_accuracy_classification_report_GS.txt
 rm ./models/RF/parameters/GS/RF_accuracy_best_parameters_report_GS.txt
 # Run the tuner (this takes 24hours to complete on a 4CPU dev VM.)
 # The command here outputs to a log file and disown's the process so the process outlives the terminal which is necessary.
-azul-smart-string-filter tune RF accuracy GS > params-out.log & disown
+azul-smart-string-filter tune RF accuracy GS <model_type> > params-out.log & disown
 # Remove old model and vectorizer so when they are re-created it's known.
 rm ./models/RF/model/GS/RF_accuracy_classifier_model_GS.onnx
 rm ./models/RF/model/GS/RF_accuracy_tfidf_vectorizer_GS.json
 # Train the model with the selected parameters (takes ~200seconds)
-azul-smart-string-filter trainmodel RF accuracy GS > train-out.log
+azul-smart-string-filter trainmodel RF accuracy GS <model_type> > train-out.log
 
 # Copy the resulting models
 cp ./models/RF/model/GS/RF_accuracy_classifier_model_GS.onnx ./azul_smart_string_filter/model/model.onnx
@@ -49,16 +56,15 @@ $ azul-smart-string-filter
 Pavlov probably thought about feeding his dogs every time someone rang a bell.
 ```
 
-This is a string filter using an AI model to filter strings. There is no complexity around the classification of good strings (those that will be shown), and bad strings (those that will be filtered). It was decided to classify human-readable strings as good (strings containing English, and in some cases, patterns that stood out), and the rest as bad.
+This is a string filter using an AI model to filter strings. There is no complexity around the classification of good strings (those that will be shown), and bad strings (those that will be filtered). It was decided to classify human-readable strings as good (strings containing English, and in some cases, patterns that stood out e.g. strings that looked like they were obfuscated etc.), and the rest as bad.
 This process could classify passwords and other valuable strings as bad as they are generally random looking.
 More work could be done on fine-tuning the classification process. e.g. bring entropy in as a factor when tuning and training the ai model.
 
-Data was taken from the first 1000 (if there were over 1000 strings in the file) strings from Windows PE binary files. Using this method, 25,000 good strings were collected along with 25,000 bad strings from roughly 70 different files.
+Data was taken using binary2strings to extract all strings from Windows and Linux executables. Using this method, roughly 50,000 good strings were collected along with 50,000 bad strings from roughly 150 different files.
 
-After extensive testing, the Random Forest model was found to be the best performing model.  
+After extensive testing, the Linear Regression model was the most successful. Particularly RS with f1.
 To determine this a number of random files were taken from Azul, the strings were run through each model, and the True positive and True negatives were counted and divided by the total number of strings in the file.  
 The performance on some non-windows files was questionable.  
-In future, multiple models might be needed to tackle different file types, or the training data needs to be extended to not just Windows PE files.
 
 Other models that were considered were Gradient Boosting (GB), K-Nearest Neighbours (KNN), Logistic Regression (LR), Naive Bayes Multinomial (NB) and Support Vector Machine (SVM).
 
@@ -83,15 +89,15 @@ The training process first starts with tuning. The tuning process consists of de
 
 Increasing the number of hyperparameters and values increases the tuning time. The above hyperparameters were chosen to balance accuracy and tuning time.
 You can use the command line interface to tune like this:
-`azul-smart-string-filter tune RF accuracy GS`. Example of tuning the Random Forest model, with the score type accuracy, and search type GridSearch.
+`azul-smart-string-filter tune RF accuracy GS win`. Example of tuning the Random Forest model, with the score type accuracy, and search type GridSearch saving as type win (windows data).
 The hyperparameter report will be saved as:
 ./models/RF/parameters/GS/RF_accuracy_best_parameters_report_GS.txt for the above example. Different models etc. will follow a similar pattern.
 
 To train the model you can use the command line interface like this:
-`azul-smart-string-filter trainmodel` RF accuracy GS. Example of training the Random Forest model, with the score type accuracy, and search type GridSearch.
+`azul-smart-string-filter trainmodel <model_type>` RF accuracy GS. Example of training the Random Forest model, with the score type accuracy, and search type GridSearch.
 The model (along with the vectorizer) will be saved as:
-./models/RF/models/GS/RF_accuracy_classifier_model_GS.onnx
-./models/RF/models/GS/RF_accuracy_tfidf_vectorizer_GS.json
+./models/RF/models/GS/RF_<model_type>_accuracy_classifier_model_GS.onnx
+./models/RF/models/GS/RF_<model_type>_accuracy_tfidf_vectorizer_GS.json
 
 The ability to train different models has been preserved (even underperforming models) in case there is a
 change to training data / implementation that could necessitate testing of different models again.
@@ -137,8 +143,8 @@ list_of_bools = GSF.find_legible_strings(string_list)
 All of the models and best hyperparameters are located in ./models/ with the format ./model_name/models/search_type/model_name_scoretype_classifier_model_search_type.joblib
 For every model there is an associated vectorizer also located in ./models/ with the format ./model_name/models/search_type/model_name_scoretype_tfidf_vectorizer_searchtype.joblib
 So the SVM model, tuned and trained with score type f1, and tuned with random search would be stored at:
-model: ./models/SMV/models/RS/SVM_f1_classifier_model_RS.joblib
-vectorizer: ./models/SMV/models/RS/SVM_f1_tfidf_vectorizer_RS.joblib
+model: ./models/SMV/models/RS/SVM_win_f1_classifier_RS.onnx
+vectorizer: ./models/SMV/models/RS/SVM_win_f1_tfidf_vectorizer_RS.json
 
 The hyperparameters and performance reports are kept in ./models in the format ./model_name/parameters/search_type/model_name_scoretype_best_parameters_report_search_type.txt and ./model_name/parameters/search_type/model_name_scoretype_classification_report_search_type.txt.
 So the SVM model, tuned with score type f1 and using randomsearch would be stored at:
