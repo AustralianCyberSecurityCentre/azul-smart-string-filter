@@ -96,8 +96,8 @@ The hyperparameter report will be saved as:
 To train the model you can use the command line interface like this:
 `azul-smart-string-filter trainmodel <model_type>` RF accuracy GS. Example of training the Random Forest model, with the score type accuracy, and search type GridSearch.
 The model (along with the vectorizer) will be saved as:
-./models/RF/models/GS/RF_<model_type>_accuracy_classifier_model_GS.onnx
-./models/RF/models/GS/RF_<model_type>_accuracy_tfidf_vectorizer_GS.json
+`./models/RF/models/GS/RF_<model_type>_accuracy_classifier_model_GS.onnx`
+`./models/RF/models/GS/RF_<model_type>_accuracy_tfidf_vectorizer_GS.json`
 
 The ability to train different models has been preserved (even underperforming models) in case there is a
 change to training data / implementation that could necessitate testing of different models again.
